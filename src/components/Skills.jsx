@@ -10,6 +10,7 @@ const skills = [
   { label: "SQL", image: "/img/sql.png" },
   { label: "Python", image: "/img/python.png" },
   { label: "Git", image: "/img/git.png" },
+  { label: "Php", image: "/img/php.png" },
 ];
 
 export default function SkillsSection() {
@@ -31,7 +32,11 @@ export default function SkillsSection() {
   }, []);
 
   return (
-    <section ref={sectionRef} className="py-20 transition duration-300">
+    <section
+      id="skill"
+      ref={sectionRef}
+      className="py-20 transition duration-300 bg-white dark:bg-dark"
+    >
       <h2 className="text-4xl font-bold text-text-light dark:text-text-dark text-center mb-12">
         Skills
       </h2>

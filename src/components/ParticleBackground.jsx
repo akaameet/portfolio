@@ -2,162 +2,154 @@ import React, { useEffect, useRef } from "react";
 
 export default function ParticleBackground() {
   const canvasRef = useRef(null);
-  const mouse = useRef({ x: null, y: null });
+  const mouse = useRef({ x: -9999, y: -9999 });
   const rafRef = useRef(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
     const ctx = canvas.getContext("2d");
 
-    // Resize canvas to device pixels for crisp rendering
+    const getColors = () => ({
+      shadow: getComputedStyle(document.documentElement)
+        .getPropertyValue("--particle-shadow")
+        .trim(),
+      color: getComputedStyle(document.documentElement)
+        .getPropertyValue("--particle-color")
+        .trim(),
+    });
+
+    let colors = getColors();
+
+    // Update colors when dark/light mode toggles
+    const observer = new MutationObserver(() => {
+      colors = getColors();
+    });
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+
+    // Resize canvas
     const resizeCanvas = () => {
       const rect = canvas.getBoundingClientRect();
-      const dpr = window.devicePixelRatio || 1;
-      canvas.width = Math.max(1, Math.floor(rect.width * dpr));
-      canvas.height = Math.max(1, Math.floor(rect.height * dpr));
+      const dpr = Math.min(window.devicePixelRatio || 1, 1.3);
+
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
       canvas.style.width = `${rect.width}px`;
       canvas.style.height = `${rect.height}px`;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0); // scale drawing operations
+
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
 
-    // initial resize (make sure canvas has layout size)
-    // If canvas has no layout yet, fallback to window sizes
-    if (!canvas.getBoundingClientRect().width) {
-      canvas.style.width = "100%";
-      canvas.style.height = "100%";
-    }
     resizeCanvas();
     window.addEventListener("resize", resizeCanvas);
 
-    // Particle count scales with viewport area (keeps perf balanced)
+    // Smart density
     const area = window.innerWidth * window.innerHeight;
-    const particleCount =
-      area < 600 * 800 ? 100 : area < 1200 * 900 ? 300 : 500;
+    const particleCount = Math.floor(area / 3000);
 
-    // Build a fullscreen grid (cols x rows)
     const particles = [];
-    const cols = Math.ceil(Math.sqrt(particleCount));
-    const rows = cols;
-    const gapX = canvas.width / cols;
-    const gapY = canvas.height / rows;
+    for (let i = 0; i < particleCount; i++) {
+      const x = Math.random() * canvas.width;
+      const y = Math.random() * canvas.height;
 
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        if (particles.length >= particleCount) break;
-        const px = c * gapX + gapX / 2;
-        const py = r * gapY + gapY / 2;
-        particles.push({
-          x: px,
-          y: py,
-          originalX: px,
-          originalY: py,
-          vx: 0,
-          vy: 0,
-          size: 1.0 + Math.random() * 3,
-          z: 1 + Math.random() * 2,
-        });
-      }
+      particles.push({
+        x,
+        y,
+        originalX: x,
+        originalY: y,
+        vx: 0,
+        vy: 0,
+        size: 1 + Math.random() * 2.2,
+        z: 1 + Math.random() * 2.2,
+      });
     }
 
-    // Mouse / touch handlers
-    const handleMouseMove = (e) => {
+    // Mouse
+    let lastMove = 0;
+    const handleMove = (e) => {
+      const now = performance.now();
+      if (now - lastMove < 16) return;
+      lastMove = now;
+
       mouse.current.x = e.clientX;
       mouse.current.y = e.clientY;
     };
-    const handleTouchMove = (e) => {
-      if (e.touches && e.touches[0]) {
-        mouse.current.x = e.touches[0].clientX;
-        mouse.current.y = e.touches[0].clientY;
+
+    canvas.addEventListener("mousemove", handleMove);
+    canvas.addEventListener("touchmove", (e) => {
+      if (e.touches[0]) {
+        handleMove({
+          clientX: e.touches[0].clientX,
+          clientY: e.touches[0].clientY,
+        });
       }
-    };
-    const handlePointerLeave = () => {
-      // on leave, place mouse far away so particles return
+    });
+
+    const resetMouse = () => {
       mouse.current.x = -9999;
       mouse.current.y = -9999;
     };
 
-    canvas.addEventListener("mousemove", handleMouseMove);
-    canvas.addEventListener("touchmove", handleTouchMove, { passive: true });
-    window.addEventListener("pointerout", handlePointerLeave);
-    window.addEventListener("mouseleave", handlePointerLeave);
+    window.addEventListener("mouseleave", resetMouse);
+    window.addEventListener("pointerleave", resetMouse);
 
-    // Animation loop using requestAnimationFrame
+    // Animation
     const animate = () => {
-      // clear full size (use logical pixels)
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // draw each particle
-      for (let i = 0; i < particles.length; i++) {
-        const p = particles[i];
+      const mx = mouse.current.x;
+      const my = mouse.current.y;
 
-        // distance to mouse; if mouse not set, use big distance
-        const mx = mouse.current.x == null ? -9999 : mouse.current.x;
-        const my = mouse.current.y == null ? -9999 : mouse.current.y;
-
+      for (let p of particles) {
         const dx = p.x - mx;
         const dy = p.y - my;
-        const dist = Math.hypot(dx, dy) + 0.0001; // avoid zero
+        const dist = Math.hypot(dx, dy) + 0.001;
 
-        const influence = 160 * p.z; // explosion radius (scaled by depth)
+        const influence = 150 * p.z;
 
         if (dist < influence) {
-          // push away (explosion)
-          const force = (influence - dist) / influence; // 0..1
-          // stronger push for nearer particles and shallower depth
-          p.vx += (dx / dist) * force * (5.5 / p.z);
-          p.vy += (dy / dist) * force * (5.5 / p.z);
+          const force = (influence - dist) / influence;
+          p.vx += (dx / dist) * force * (2.8 / p.z);
+          p.vy += (dy / dist) * force * (2.8 / p.z);
         } else {
-          // return to original grid position smoothly
-          p.vx += (p.originalX - p.x) * 0.025 * (1 / p.z);
-          p.vy += (p.originalY - p.y) * 0.025 * (1 / p.z);
+          p.vx += (p.originalX - p.x) * 0.015 * (1 / p.z);
+          p.vy += (p.originalY - p.y) * 0.015 * (1 / p.z);
         }
 
-        // velocity damping
-        p.vx *= 0.88;
-        p.vy *= 0.88;
+        p.vx *= 0.9;
+        p.vy *= 0.9;
 
-        // integrate
         p.x += p.vx;
         p.y += p.vy;
 
-        // draw with neon-green glow
         ctx.beginPath();
-        ctx.shadowBlur = 14 / p.z;
-        ctx.shadowColor = "rgba(0,255,102,0.9)";
-        ctx.fillStyle = `rgba(0,255,102,${0.2 + 0.55 / p.z})`;
-        ctx.arc(p.x, p.y, p.size * (1 / p.z), 0, Math.PI * 2);
+        ctx.shadowBlur = 6;
+        ctx.shadowColor = colors.shadow;
+        ctx.fillStyle = colors.color;
+        ctx.arc(p.x, p.y, p.size / p.z, 0, Math.PI * 2);
         ctx.fill();
       }
 
       rafRef.current = requestAnimationFrame(animate);
     };
 
-    // kick off animation
-    rafRef.current = requestAnimationFrame(animate);
+    animate();
 
-    // cleanup handler
     return () => {
+      cancelAnimationFrame(rafRef.current);
+      observer.disconnect();
       window.removeEventListener("resize", resizeCanvas);
-      canvas.removeEventListener("mousemove", handleMouseMove);
-      canvas.removeEventListener("touchmove", handleTouchMove);
-      window.removeEventListener("pointerout", handlePointerLeave);
-      window.removeEventListener("mouseleave", handlePointerLeave);
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // run once on mount
+  }, []);
 
-  // Canvas sits absolutely. Keep pointerEvents: "auto" so it receives mouse/touch.
   return (
     <canvas
       ref={canvasRef}
       className="absolute inset-0 w-full h-full"
-      style={{
-        pointerEvents: "auto",
-        background: "transparent",
-        display: "block",
-      }}
+      style={{ pointerEvents: "auto", background: "transparent" }}
     />
   );
 }

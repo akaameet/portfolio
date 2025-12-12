@@ -1,23 +1,16 @@
 import { useState, useEffect } from "react";
-import { FaLinkedin, FaTwitter, FaSun, FaMoon } from "react-icons/fa";
-import { SiBehance } from "react-icons/si";
+import { FaSun, FaMoon } from "react-icons/fa";
 
 export default function Navbar() {
-  const [darkMode, setDarkMode] = useState(false);
+  // Initialize darkMode state directly from localStorage
+  const storedTheme =
+    typeof window !== "undefined" ? localStorage.getItem("theme") : null;
+  const initialDarkMode = storedTheme === "dark";
 
-  // Load theme from localStorage on first render
-  useEffect(() => {
-    const storedTheme = localStorage.getItem("theme");
-    if (storedTheme === "dark") {
-      setDarkMode(true);
-      document.documentElement.classList.add("dark");
-    } else {
-      setDarkMode(false);
-      document.documentElement.classList.remove("dark");
-    }
-  }, []);
+  const [darkMode, setDarkMode] = useState(initialDarkMode);
+  const [activeSection, setActiveSection] = useState("home");
 
-  // Update theme whenever darkMode changes
+  // Load stored theme on mount (only if not already set)
   useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add("dark");
@@ -28,12 +21,30 @@ export default function Navbar() {
     }
   }, [darkMode]);
 
-  return (
-    <nav className="fixed top-4 left-1/2 -translate-x-1/2 w-11/12 md:w-4/5 bg-gray-100 dark:bg-gray-900 rounded-xl z-50 shadow-lg px-4 md:px-8 py-4 flex justify-between items-center text-gray-800 dark:text-gray-300 transition-colors duration-300">
-      {/* Logo */}
-      {/* <h1 className="text-2xl font-bold">Daemon</h1> */}
+  // Intersection Observer to detect section visibility
+  useEffect(() => {
+    const sections = document.querySelectorAll("section");
+    const options = {
+      threshold: 0.5, // Adjust based on how much of the section should be visible
+    };
 
-      {/* Navigation links */}
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        const sectionId = entry.target.id;
+        if (entry.isIntersecting) {
+          setActiveSection(sectionId); // Update active section
+        }
+      });
+    }, options);
+
+    sections.forEach((section) => observer.observe(section));
+
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <nav className="fixed top-4 left-1/2 -translate-x-1/2 w-11/12 md:w-4/5 bg-light/80 dark:bg-dark/80 backdrop-blur-lg rounded-xl shadow-lg dark:shadow-white/25 z-50 px-4 md:px-8 py-4 flex justify-between items-center text-text-light dark:text-text-dark transition-colors duration-300">
+      {/* Navigation Links */}
       <div className="hidden md:flex flex-1 justify-evenly text-lg">
         {[
           { id: "home", label: "Home" },
@@ -45,60 +56,44 @@ export default function Navbar() {
           <a
             key={item.id}
             href={`#${item.id}`}
-            className="hover:text-blue-500 dark:hover:text-blue-400 transition-colors duration-200"
+            className={`hover:text-primary dark:hover:text-secondary transition-colors duration-200 ${
+              activeSection === item.id
+                ? "text-primary dark:text-secondary"
+                : ""
+            }`}
           >
             {item.label}
           </a>
         ))}
       </div>
 
-      {/* Social icons + Toggle */}
-      <div className="flex items-center gap-3 md:gap-4">
-        {/* <a
-          href="#"
-          className="hover:text-blue-500 transition-colors text-lg md:text-xl"
-        >
-          <FaLinkedin />
-        </a>
-        <a
-          href="#"
-          className="hover:text-blue-500 transition-colors text-lg md:text-xl"
-        >
-          <SiBehance />
-        </a>
-        <a
-          href="#"
-          className="hover:text-blue-500 transition-colors text-lg md:text-xl"
-        >
-          <FaTwitter />
-        </a> */}
-
-        {/* Responsive Animated Toggle Switch */}
-        <div
-          onClick={() => setDarkMode(!darkMode)}
-          className={`relative ml-2 w-14 h-7 md:w-16 md:h-8 flex items-center rounded-full p-1 cursor-pointer transition-colors duration-300 ${
-            darkMode ? "bg-gray-700" : "bg-gray-300"
+      {/* Toggle Theme */}
+      <div
+        onClick={() => setDarkMode(!darkMode)}
+        className={`relative ml-2 w-14 h-7 md:w-16 md:h-8 flex items-center rounded-full p-1 cursor-pointer transition-colors duration-300 ${
+          darkMode ? "bg-gray-700" : "bg-gray-300"
+        }`}
+      >
+        {/* Sun Icon (dark mode ON) */}
+        <FaSun
+          className={`absolute left-1 md:left-2 text-yellow-400 transition-opacity duration-300 ${
+            darkMode ? "opacity-100" : "opacity-0"
           }`}
-        >
-          {/* Sun Icon */}
-          <FaSun
-            className={`absolute left-1 md:left-2 text-yellow-400 transition-opacity duration-300 ${
-              darkMode ? "opacity-100" : "opacity-0"
-            }`}
-          />
-          {/* Moon Icon */}
-          <FaMoon
-            className={`absolute right-1 md:right-2 text-gray-100 transition-opacity duration-300 ${
-              darkMode ? "opacity-0" : "opacity-100"
-            }`}
-          />
-          {/* Sliding Circle */}
-          <div
-            className={`bg-white w-5 h-5 md:w-6 md:h-6 rounded-full shadow-md transform transition-transform duration-300 ${
-              darkMode ? "translate-x-7 md:translate-x-8" : ""
-            }`}
-          ></div>
-        </div>
+        />
+
+        {/* Moon Icon (dark mode OFF) */}
+        <FaMoon
+          className={`absolute right-1 md:right-2 text-gray-100 transition-opacity duration-300 ${
+            darkMode ? "opacity-0" : "opacity-100"
+          }`}
+        />
+
+        {/* Slider Button */}
+        <div
+          className={`bg-white w-5 h-5 md:w-6 md:h-6 rounded-full shadow-md transform transition-transform duration-300 ${
+            darkMode ? "translate-x-7 md:translate-x-8" : ""
+          }`}
+        />
       </div>
     </nav>
   );
