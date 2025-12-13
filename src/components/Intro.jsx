@@ -21,8 +21,10 @@ export default function Intro() {
           </h1>
 
           <p className="text-xl max-w-xl mt-4 text-muted">
-            A passionate Full-Stack Developer based in Kathmandu specializing in
-            MERN, backend APIs, UI development, and real-world applications.
+            A passionate Full-Stack Developer based in Kathmandu, eager to
+            explore and work with new technologies, focused on crafting
+            intuitive user interfaces and developing impactful real-world
+            applications.
           </p>
 
           {/* <button
