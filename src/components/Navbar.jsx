@@ -43,7 +43,7 @@ export default function Navbar() {
   }, []);
 
   return (
-    <nav className="fixed top-4 left-1/2 -translate-x-1/2 w-11/12 md:w-4/5 bg-light/80 dark:bg-dark/80 backdrop-blur-lg rounded-xl shadow-lg dark:shadow-white/25 z-50 px-4 md:px-8 py-4 flex justify-between items-center text-text-light dark:text-text-dark transition-colors duration-300">
+    <nav className="fixed top-4 left-1/2 -translate-x-1/2 w-11/12 md:w-4/5 bg-light/80 dark:bg-dark/80 backdrop-blur-lg rounded-xl shadow-lg dark:shadow-green-950 z-50 px-4 md:px-8 py-4 flex justify-between items-center text-text-light dark:text-text-dark transition-colors duration-300">
       {/* Navigation Links */}
       <div className="hidden md:flex flex-1 justify-evenly text-lg">
         {[

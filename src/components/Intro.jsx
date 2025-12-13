@@ -38,7 +38,7 @@ export default function Intro() {
           <img
             src="/img/profile.jpg"
             alt="Amit Rai"
-            className="w-96 h-96 object-cover rounded-full shadow-xl"
+            className="w-64 h-64 object-cover rounded-full shadow-xl"
           />
         </div>
       </div>
