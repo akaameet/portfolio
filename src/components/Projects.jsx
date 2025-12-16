@@ -13,7 +13,7 @@ export default function Projects() {
       title: "Bloom – Plant Ecommerce Store",
       tech: "PHP, MySQL, HTML, CSS, JavaScript",
       desc: "A modern plant-selling ecommerce platform with product listings, cart, authentication, and order management.",
-      img: "/images/bloom.png",
+      img: "/img/bloom.png",
       github: "https://github.com/akaameet/Bloom",
     },
     {
